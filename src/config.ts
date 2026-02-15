@@ -35,13 +35,11 @@ function validateConfig(rawConfig: any): Config {
     // Committing a sin and using a nested if
     if (keys.includes("dbUrl")) {
         if (keys.includes("currentUserName")) {
-            console.log("Both keys exist");
             return {
                 dbUrl: rawConfig.dbUrl,
                 currentUserName: rawConfig.currentUserName
             };
         }
-        console.log("One key exists");
         return {
             dbUrl: rawConfig.dbUrl,
             currentUserName: "placeholder" // This is the silliest way I've ever implemented a failsafe like this
