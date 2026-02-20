@@ -1,7 +1,7 @@
 // This file handles all functions and types related to commands
 
 import { setUser, readConfig } from "./config";
-import { createUser, getUser, deleteAllUsers } from "./db/queries/users";
+import { createUser, getUser, getUsers, deleteAllUsers } from "./db/queries/users";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>; // Yay promises!
 
@@ -38,6 +38,22 @@ export async function handlerRegisterUser(cmdName: string, ...args: string[]): P
     } catch (err) {
         console.error(`User ${args[0]} already exists. Please register a different user.`);
         process.exit(1);
+    }
+}
+
+export async function handlerGetUsers(cmdName: string): Promise<void> {
+    const users = await getUsers();
+    if (users.length === 0 || users === undefined) {
+        console.log("No users registered");
+        process.exit(0);
+    }
+    const cfg = readConfig()
+    for (let user of users) {
+        if (user.name === cfg.currentUserName) {
+            console.log(`* ${user.name} (current)`);
+            continue;
+        }
+        console.log(`* ${user.name}`);
     }
 }
 

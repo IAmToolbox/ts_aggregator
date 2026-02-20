@@ -16,6 +16,12 @@ export async function getUser(name: string) {
     return result;
 }
 
+// Query all users from the database
+export async function getUsers() {
+    const result = await db.select().from(users);
+    return result;
+}
+
 // Query a full table reset for testing purposes
 export async function deleteAllUsers() {
     await db.delete(users);
