@@ -2,6 +2,7 @@
 
 import { setUser, readConfig } from "./config";
 import { createUser, getUser, getUsers, deleteAllUsers } from "./db/queries/users";
+import { fetchFeed } from "./feed"
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>; // Yay promises!
 
@@ -65,6 +66,11 @@ export async function handlerDeleteAllUsers(cmdName: string): Promise<void> {
         console.error("Something went wrong while deleting all users");
         process.exit(1);
     }
+}
+
+export async function handlerAggregate(cmdName: string, ...args: string[]): Promise<void> {
+    const feed = await fetchFeed("https://www.wagslane.dev/index.xml"); // This is a temporary URL
+    console.log(JSON.stringify(feed, null, 2));
 }
 
 export function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler): void {

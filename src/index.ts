@@ -4,7 +4,7 @@
 import type { CommandsRegistry } from "./commands";
 
 import { setUser, readConfig } from "./config";
-import { handlerLogin, handlerRegisterUser, handlerGetUsers, handlerDeleteAllUsers, registerCommand, runCommand } from "./commands";
+import { handlerLogin, handlerRegisterUser, handlerGetUsers, handlerDeleteAllUsers, handlerAggregate, registerCommand, runCommand } from "./commands";
 
 async function main() {
     const registry: CommandsRegistry = {};
@@ -13,6 +13,7 @@ async function main() {
     registerCommand(registry, "register", handlerRegisterUser);
     registerCommand(registry, "users", handlerGetUsers);
     registerCommand(registry, "reset", handlerDeleteAllUsers);
+    registerCommand(registry, "agg", handlerAggregate);
     const userArgs = process.argv.slice(2);
     if (userArgs.length === 0) {
         console.error("Please provide a command.");
