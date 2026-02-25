@@ -2,7 +2,11 @@
 
 import { db } from "..";
 import { users } from "../schema";
+import { type InferSelectModel } from "drizzle-orm";
 import { eq } from "drizzle-orm";
+
+// Export type for user table
+export type User = typeof users.$inferSelect;
 
 // Query the creation of a user in the database
 export async function createUser(name: string) {

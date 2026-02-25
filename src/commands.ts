@@ -2,7 +2,11 @@
 
 import { setUser, readConfig } from "./config";
 import { createUser, getUser, getUsers, deleteAllUsers } from "./db/queries/users";
-import { fetchFeed } from "./feed"
+import { createFeed } from "./db/queries/feeds";
+import { fetchFeed } from "./feed";
+
+import { type User } from "./db/queries/users";
+import { type Feed } from "./db/queries/feeds";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>; // Yay promises!
 
@@ -20,7 +24,7 @@ export async function handlerLogin(cmdName: string, ...args: string[]): Promise<
             throw new Error("User doesn't exist!");
         }
         setUser(readConfig(), args[0]);
-        console.log(`User ${args[0]} has been set`);
+        console.log(`User ${args[0]} has logged in.`);
     } catch (err) {
         console.error(`User ${args[0]} doesn't exist. Please register this user before logging in.`);
         process.exit(1);
@@ -68,6 +72,24 @@ export async function handlerDeleteAllUsers(cmdName: string): Promise<void> {
     }
 }
 
+export async function handlerAddFeed(cmdName: string, ...args: string[]): Promise<void> {
+    if (args.length !== 2 || args === undefined) {
+        console.error("Not enough arguments. Please provide a feed name and a url.");
+        process.exit(1);
+    }
+
+    const cfg = readConfig();
+    const user = await getUser(cfg.currentUserName);
+    try {
+        const result = await createFeed(args[0], args[1], user.id);
+        console.log(`Feed ${args[0]} has been created.`);
+        printFeed(result, user);
+    } catch (err) {
+        console.error(`Feed ${args[0]} already exists`);
+        process.exit(1);
+    }
+}
+
 export async function handlerAggregate(cmdName: string, ...args: string[]): Promise<void> {
     const feed = await fetchFeed("https://www.wagslane.dev/index.xml"); // This is a temporary URL
     console.log(JSON.stringify(feed, null, 2));
@@ -84,4 +106,9 @@ export async function runCommand(registry: CommandsRegistry, cmdName: string, ..
     else {
         throw new Error("Command not found");
     }
+}
+
+function printFeed(feed: Feed, user: User): void {
+    console.log(feed);
+    console.log(user);
 }
