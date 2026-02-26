@@ -20,6 +20,12 @@ export async function getUser(name: string) {
     return result;
 }
 
+// Query searching for a user... but from an id
+export async function getUserFromId(id: string) {
+    const [result] = await db.select().from(users).where(eq(users.id, id));
+    return result;
+}
+
 // Query all users from the database
 export async function getUsers() {
     const result = await db.select().from(users);

@@ -12,3 +12,10 @@ export async function createFeed(name: string, url: string, userId: string) {
     const [result] = await db.insert(feeds).values({ name: name, url: url, userId: userId}).returning();
     return result;
 }
+
+// Query searching all feeds
+
+export async function getFeeds() {
+    const result = await db.select().from(feeds);
+    return result;
+}

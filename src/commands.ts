@@ -1,8 +1,8 @@
 // This file handles all functions and types related to commands
 
 import { setUser, readConfig } from "./config";
-import { createUser, getUser, getUsers, deleteAllUsers } from "./db/queries/users";
-import { createFeed } from "./db/queries/feeds";
+import { createUser, getUser, getUserFromId, getUsers, deleteAllUsers } from "./db/queries/users";
+import { createFeed, getFeeds } from "./db/queries/feeds";
 import { fetchFeed } from "./feed";
 
 import { type User } from "./db/queries/users";
@@ -87,6 +87,18 @@ export async function handlerAddFeed(cmdName: string, ...args: string[]): Promis
     } catch (err) {
         console.error(`Feed ${args[0]} already exists`);
         process.exit(1);
+    }
+}
+
+export async function handlerGetFeeds(cmdName: string): Promise<void> {
+    const feeds = await getFeeds();
+    if (feeds.length === 0 || feeds === undefined) {
+        console.log("No feeds registered");
+        process.exit(0);
+    }
+    for (let feed of feeds) {
+        const feedUser = await getUserFromId(feed.userId);
+        console.log(`* ${feed.name} | ${feedUser.name}\n  - ${feed.url}`)
     }
 }
 
