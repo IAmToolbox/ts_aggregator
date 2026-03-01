@@ -3,7 +3,7 @@
 import { setUser, readConfig } from "./config";
 import { createUser, getUser, getUserFromId, getUsers, deleteAllUsers } from "./db/queries/users";
 import { createFeed, getFeedByUrl, getFeeds } from "./db/queries/feeds";
-import { createFeedFollow } from "./db/queries/feed_follows";
+import { createFeedFollow, getFeedFollowsForUser } from "./db/queries/feed_follows";
 import { fetchFeed } from "./feed";
 
 import { type User } from "./db/queries/users";
@@ -85,6 +85,7 @@ export async function handlerAddFeed(cmdName: string, ...args: string[]): Promis
         const result = await createFeed(args[0], args[1], user.id);
         console.log(`Feed ${args[0]} has been created.`);
         printFeed(result, user);
+        await handlerFollow(cmdName, args[1]); // We love reusing functions here :D
     } catch (err) {
         console.error(`Feed ${args[0]} already exists`);
         process.exit(1);
@@ -118,7 +119,25 @@ export async function handlerFollow(cmdName: string, ...args: string[]): Promise
         console.log(createdFollow.at(-1)); // Why do I have to do it this way Python has it figured out......
     } catch (err) {
         console.error("Feed follow couldn't be created...");
-        console.error(err);
+        process.exit(1);
+    }
+}
+
+export async function handlerGetFollows(cmdName: string): Promise<void> {
+    const cfg = readConfig();
+    const user = await getUser(cfg.currentUserName);
+    try {
+        const follows = await getFeedFollowsForUser(user.id);
+        if (follows.length === 0) {
+            console.log("Not following any feeds");
+            process.exit(0);
+        }
+        console.log(`${user.name} is following:`);
+        for (let follow of follows) {
+            console.log(`* ${follow.feedName}`);
+        }
+    } catch (err) {
+        console.error("Couldn't get follows");
         process.exit(1);
     }
 }

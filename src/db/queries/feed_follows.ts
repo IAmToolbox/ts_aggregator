@@ -19,3 +19,17 @@ export async function createFeedFollow(userId: string, feedId: string) {
     }).from(feedFollows).innerJoin(users, eq(feedFollows.userId, users.id)).innerJoin(feeds, eq(feedFollows.feedId, feeds.id));
     return result;
 }
+
+// Query the search of all follows for a single user, based on user id
+export async function getFeedFollowsForUser(userId: string) {
+    const result = await db.select({
+        followId: feedFollows.id,
+        followCreatedAt: feedFollows.createdAt,
+        followUpdatedAt: feedFollows.updatedAt,
+        followUserId: feedFollows.userId,
+        userName: users.name,
+        followFeedId: feedFollows.feedId,
+        feedName: feeds.name,
+    }).from(feedFollows).where(eq(feedFollows.userId, userId)).innerJoin(users, eq(feedFollows.userId, users.id)).innerJoin(feeds, eq(feedFollows.feedId, feeds.id));
+    return result;
+}
