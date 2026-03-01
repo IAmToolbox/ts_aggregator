@@ -2,7 +2,8 @@
 
 import { setUser, readConfig } from "./config";
 import { createUser, getUser, getUserFromId, getUsers, deleteAllUsers } from "./db/queries/users";
-import { createFeed, getFeeds } from "./db/queries/feeds";
+import { createFeed, getFeedByUrl, getFeeds } from "./db/queries/feeds";
+import { createFeedFollow } from "./db/queries/feed_follows";
 import { fetchFeed } from "./feed";
 
 import { type User } from "./db/queries/users";
@@ -99,6 +100,26 @@ export async function handlerGetFeeds(cmdName: string): Promise<void> {
     for (let feed of feeds) {
         const feedUser = await getUserFromId(feed.userId);
         console.log(`* ${feed.name} | ${feedUser.name}\n  - ${feed.url}`)
+    }
+}
+
+export async function handlerFollow(cmdName: string, ...args: string[]): Promise<void> {
+    if (args.length === 0 || args === undefined) {
+        console.error("Please provide a url for the follow");
+        process.exit(1);
+    }
+
+    const cfg = readConfig();
+    const user = await getUser(cfg.currentUserName);
+    const feed = await getFeedByUrl(args[0]);
+    try {
+        const createdFollow = await createFeedFollow(user.id, feed.id);
+        console.log("Feed has been followed");
+        console.log(createdFollow.at(-1)); // Why do I have to do it this way Python has it figured out......
+    } catch (err) {
+        console.error("Feed follow couldn't be created...");
+        console.error(err);
+        process.exit(1);
     }
 }
 
