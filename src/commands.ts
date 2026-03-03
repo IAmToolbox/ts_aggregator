@@ -10,6 +10,7 @@ import { type User } from "./db/queries/users";
 import { type Feed } from "./db/queries/feeds";
 
 type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>; // Yay promises!
+type UserCommandHandler = (cmdName: string, user: User, ...args: string[]) => Promise<void>;
 
 export type CommandsRegistry = Record<string, CommandHandler>;
 
@@ -73,19 +74,17 @@ export async function handlerDeleteAllUsers(cmdName: string): Promise<void> {
     }
 }
 
-export async function handlerAddFeed(cmdName: string, ...args: string[]): Promise<void> {
+export async function handlerAddFeed(cmdName: string, user: User, ...args: string[]): Promise<void> {
     if (args.length !== 2 || args === undefined) {
         console.error("Not enough arguments. Please provide a feed name and a url.");
         process.exit(1);
     }
 
-    const cfg = readConfig();
-    const user = await getUser(cfg.currentUserName);
     try {
         const result = await createFeed(args[0], args[1], user.id);
         console.log(`Feed ${args[0]} has been created.`);
         printFeed(result, user);
-        await handlerFollow(cmdName, args[1]); // We love reusing functions here :D
+        await handlerFollow(cmdName, user, args[1]); // We love reusing functions here :D
     } catch (err) {
         console.error(`Feed ${args[0]} already exists`);
         process.exit(1);
@@ -104,14 +103,12 @@ export async function handlerGetFeeds(cmdName: string): Promise<void> {
     }
 }
 
-export async function handlerFollow(cmdName: string, ...args: string[]): Promise<void> {
+export async function handlerFollow(cmdName: string, user: User, ...args: string[]): Promise<void> {
     if (args.length === 0 || args === undefined) {
         console.error("Please provide a url for the follow");
         process.exit(1);
     }
 
-    const cfg = readConfig();
-    const user = await getUser(cfg.currentUserName);
     const feed = await getFeedByUrl(args[0]);
     try {
         const createdFollow = await createFeedFollow(user.id, feed.id);
@@ -123,9 +120,7 @@ export async function handlerFollow(cmdName: string, ...args: string[]): Promise
     }
 }
 
-export async function handlerGetFollows(cmdName: string): Promise<void> {
-    const cfg = readConfig();
-    const user = await getUser(cfg.currentUserName);
+export async function handlerGetFollows(cmdName: string, user: User): Promise<void> {
     try {
         const follows = await getFeedFollowsForUser(user.id);
         if (follows.length === 0) {
@@ -157,6 +152,18 @@ export async function runCommand(registry: CommandsRegistry, cmdName: string, ..
     }
     else {
         throw new Error("Command not found");
+    }
+}
+
+// This function is a middleware that keeps the check for a logged in user in a safe space
+export function middlewareLoggedIn(handler: UserCommandHandler): CommandHandler {
+    return async (cmdName: string, ...args: string[]) => {
+        const cfg = readConfig();
+        const user = await getUser(cfg.currentUserName);
+        if (!user) {
+            throw new Error(`User ${cfg.currentUserName} not found`);
+        }
+        await handler(cmdName, user, ...args);
     }
 }
 

@@ -4,19 +4,20 @@
 import type { CommandsRegistry } from "./commands";
 
 import { setUser, readConfig } from "./config";
-import { handlerLogin, handlerRegisterUser, handlerGetUsers, handlerDeleteAllUsers, handlerAddFeed, handlerGetFeeds, handlerFollow, handlerGetFollows, handlerAggregate, registerCommand, runCommand } from "./commands";
+import { handlerLogin, handlerRegisterUser, handlerGetUsers, handlerDeleteAllUsers, handlerAddFeed, handlerGetFeeds, handlerFollow, handlerGetFollows, handlerAggregate, registerCommand, middlewareLoggedIn, runCommand } from "./commands";
 
 async function main() {
     const registry: CommandsRegistry = {};
 
+    // Keep an eye out on the function signatures. Some of them will need to be wrapped in middleware to function properly.
     registerCommand(registry, "login", handlerLogin);
     registerCommand(registry, "register", handlerRegisterUser);
     registerCommand(registry, "users", handlerGetUsers);
     registerCommand(registry, "reset", handlerDeleteAllUsers);
-    registerCommand(registry, "addfeed", handlerAddFeed);
+    registerCommand(registry, "addfeed", middlewareLoggedIn(handlerAddFeed));
     registerCommand(registry, "feeds", handlerGetFeeds);
-    registerCommand(registry, "follow", handlerFollow);
-    registerCommand(registry, "following", handlerGetFollows);
+    registerCommand(registry, "follow", middlewareLoggedIn(handlerFollow));
+    registerCommand(registry, "following", middlewareLoggedIn(handlerGetFollows));
     registerCommand(registry, "agg", handlerAggregate);
     const userArgs = process.argv.slice(2);
     if (userArgs.length === 0) {
