@@ -21,8 +21,21 @@ export async function getFeedByUrl(url: string) {
 }
 
 // Query searching all feeds
-
 export async function getFeeds() {
     const result = await db.select().from(feeds);
+    return result;
+}
+
+// Query an update to the current time for the given feed
+export async function markFeedFetched(id: string) {
+    await db.update(feeds).set({
+        updatedAt: new Date(),
+        last_fetched_at: new Date(),
+    }).where(eq(feeds.id, id));
+}
+
+// Query the next feed that needs to be fetched. Should be the first one on the list based on the last_fetched_at column
+export async function getNextFeedToFetch() {
+    const [result] = await db.execute(sql`SELECT * FROM ${feeds} ORDER BY ${feeds.lastFetchedAt} NULLS FIRST`);
     return result;
 }

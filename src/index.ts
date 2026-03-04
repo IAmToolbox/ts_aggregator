@@ -18,6 +18,7 @@ async function main() {
     commands.registerCommand(registry, "feeds", commands.handlerGetFeeds);
     commands.registerCommand(registry, "follow", commands.middlewareLoggedIn(commands.handlerFollow));
     commands.registerCommand(registry, "following", commands.middlewareLoggedIn(commands.handlerGetFollows));
+    commands.registerCommand(registry, "unfollow", commands.middlewareLoggedIn(commands.handlerUnfollow));
     commands.registerCommand(registry, "agg", commands.handlerAggregate);
     const userArgs = process.argv.slice(2);
     if (userArgs.length === 0) {

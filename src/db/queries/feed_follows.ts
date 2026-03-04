@@ -2,7 +2,7 @@
 
 import { db } from "..";
 import { users, feeds, feedFollows} from "../schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 // Multiple queries in one function here.
 // This will insert a follow into the feed_follows table, then return a joined table with all info from that, as well as the names of the user and the feed
@@ -32,4 +32,9 @@ export async function getFeedFollowsForUser(userId: string) {
         feedName: feeds.name,
     }).from(feedFollows).where(eq(feedFollows.userId, userId)).innerJoin(users, eq(feedFollows.userId, users.id)).innerJoin(feeds, eq(feedFollows.feedId, feeds.id));
     return result;
+}
+
+// Query the deletion of a follow
+export async function deleteFeedFollow(userId: string, feedId: string) {
+    await db.delete(feedFollows).where(and(eq(feedFollows.userId, userId), eq(feedFollows.feedId, feedId)));
 }

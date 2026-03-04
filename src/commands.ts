@@ -3,7 +3,7 @@
 import { setUser, readConfig } from "./config";
 import { createUser, getUser, getUserFromId, getUsers, deleteAllUsers } from "./db/queries/users";
 import { createFeed, getFeedByUrl, getFeeds } from "./db/queries/feeds";
-import { createFeedFollow, getFeedFollowsForUser } from "./db/queries/feed_follows";
+import { createFeedFollow, getFeedFollowsForUser, deleteFeedFollow } from "./db/queries/feed_follows";
 import { fetchFeed } from "./feed";
 
 import { type User } from "./db/queries/users";
@@ -112,7 +112,7 @@ export async function handlerFollow(cmdName: string, user: User, ...args: string
     const feed = await getFeedByUrl(args[0]);
     try {
         const createdFollow = await createFeedFollow(user.id, feed.id);
-        console.log("Feed has been followed");
+        console.log(`${user.name} followed feed ${feed.name}`);
         console.log(createdFollow.at(-1)); // Why do I have to do it this way Python has it figured out......
     } catch (err) {
         console.error("Feed follow couldn't be created...");
@@ -124,7 +124,7 @@ export async function handlerGetFollows(cmdName: string, user: User): Promise<vo
     try {
         const follows = await getFeedFollowsForUser(user.id);
         if (follows.length === 0) {
-            console.log("Not following any feeds");
+            console.log(`${user.name} isn't following any feeds`);
             process.exit(0);
         }
         console.log(`${user.name} is following:`);
@@ -132,8 +132,24 @@ export async function handlerGetFollows(cmdName: string, user: User): Promise<vo
             console.log(`* ${follow.feedName}`);
         }
     } catch (err) {
-        console.error("Couldn't get follows");
+        console.error(`Couldn't get follows for user ${user.name}`);
         process.exit(1);
+    }
+}
+
+export async function handlerUnfollow(cmdName: string, user: User, ...args: string[]): Promise<void> {
+    if (args.length === 0 || args === undefined) {
+        console.error("Please provide a url to unfollow");
+        process.exit(1);
+    }
+
+    const feed = await getFeedByUrl(args[0]);
+    try {
+        await deleteFeedFollow(user.id, feed.id);
+        console.log(`${user.name} unfollowed the feed ${feed.name}`);
+    } catch (err) {
+        console.error("Couldn't unfollow feed");
+        console.error(err);
     }
 }
 
