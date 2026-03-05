@@ -2,7 +2,7 @@
 
 import { setUser, readConfig } from "./config";
 import { createUser, getUser, getUserFromId, getUsers, deleteAllUsers } from "./db/queries/users";
-import { createFeed, getFeedByUrl, getFeeds } from "./db/queries/feeds";
+import { createFeed, getFeedByUrl, getFeeds, markFeedFetched, getNextFeedToFetch } from "./db/queries/feeds";
 import { createFeedFollow, getFeedFollowsForUser, deleteFeedFollow } from "./db/queries/feed_follows";
 import { fetchFeed } from "./feed";
 
@@ -154,8 +154,32 @@ export async function handlerUnfollow(cmdName: string, user: User, ...args: stri
 }
 
 export async function handlerAggregate(cmdName: string, ...args: string[]): Promise<void> {
-    const feed = await fetchFeed("https://www.wagslane.dev/index.xml"); // This is a temporary URL
-    console.log(JSON.stringify(feed, null, 2));
+    if (args.length === 0 || args === undefined) {
+        console.error("Please provide a duration string");
+        process.exit(1);
+    }
+
+    const timeBetweenRequests = parseDuration(args[0]);
+    console.log(`Collecting feeds every ${args[0]}`);
+    try {
+        await scrapeFeeds();
+
+        const interval = setInterval(() => {
+            scrapeFeeds();
+        }, timeBetweenRequests);
+
+        await new Promise<void>((resolve) => {
+            process.on("SIGINT", () => {
+                console.log("\nShutting down feed aggregator...");
+                clearInterval(interval);
+                resolve();
+            });
+        });
+    } catch (err) {
+        console.error("Something went horribly wrong");
+        console.error(err);
+        process.exit(1);
+    }
 }
 
 export function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler): void {
@@ -180,6 +204,43 @@ export function middlewareLoggedIn(handler: UserCommandHandler): CommandHandler 
             throw new Error(`User ${cfg.currentUserName} not found`);
         }
         await handler(cmdName, user, ...args);
+    }
+}
+
+// This function is constantly called by the handlerAggregate
+async function scrapeFeeds(): Promise<void> {
+    const feed = await getNextFeedToFetch();
+    await markFeedFetched(feed.id);
+    const feedContents = await fetchFeed(feed.url);
+    for (let item of feedContents.channel.item) {
+        console.log(item.title);
+    }
+    console.log("\n"); // Give a little bit of space between feeds
+}
+
+function parseDuration(durationStr: string): number {
+    const regex = /^(\d+)(ms|s|m|h)$/;
+    const match = durationStr.match(regex);
+    if (match === null) {
+        console.error("Match failed. Please give a duration string (e.g 10m, 1s, 1h)");
+        process.exit(1);
+    }
+    // Handle conversions
+    switch (match[2]) {
+        case "ms":
+            return parseInt(match[1]);
+        case "s":
+            let durationSeconds = parseInt(match[1]);
+            return durationSeconds * 1000;
+        case "m":
+            let durationMinutes = parseInt(match[1]);
+            return (durationMinutes * 60) * 1000;
+        case "h":
+            let durationHours = parseInt(match[1]);
+            return ((durationHours * 60) * 60) * 1000;
+        default: // Just in case the regex fails to catch some weird edge case
+            console.error("Incorrect duration string. Remember to use ms, s, m, or h after the number");
+            process.exit(1);
     }
 }
 

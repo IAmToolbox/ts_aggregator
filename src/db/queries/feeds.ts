@@ -3,7 +3,7 @@
 import { db } from "..";
 import { users, feeds } from "../schema";
 import { type InferSelectModel } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 
 // Export type for feeds table
 export type Feed = typeof feeds.$inferSelect;
