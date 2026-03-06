@@ -1,7 +1,7 @@
 // Functions that query the feeds table in the database
 
 import { db } from "..";
-import { users, feeds } from "../schema";
+import { feeds } from "../schema";
 import { type InferSelectModel } from "drizzle-orm";
 import { sql, eq } from "drizzle-orm";
 

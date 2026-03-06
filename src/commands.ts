@@ -4,6 +4,7 @@ import { setUser, readConfig } from "./config";
 import { createUser, getUser, getUserFromId, getUsers, deleteAllUsers } from "./db/queries/users";
 import { createFeed, getFeedByUrl, getFeeds, markFeedFetched, getNextFeedToFetch } from "./db/queries/feeds";
 import { createFeedFollow, getFeedFollowsForUser, deleteFeedFollow } from "./db/queries/feed_follows";
+import { createPost, getPostsForUser } from "./db/queries/posts";
 import { fetchFeed } from "./feed";
 
 import { type User } from "./db/queries/users";
@@ -182,6 +183,45 @@ export async function handlerAggregate(cmdName: string, ...args: string[]): Prom
     }
 }
 
+export async function handlerBrowse(cmdName: string, user: User, ...args: string[]): Promise<void> {
+    let limit = 2;
+    if (args.length !== 0) {
+        limit = parseInt(args[0]);
+        // Committing the sin of nested ifs again I know I know...
+        if (limit === NaN) {
+            console.error("Please provide a number to set post limit. Default limit is 2.");
+            process.exit(1);
+        }
+    }
+
+    try {
+        const feeds = await getFeedFollowsForUser(user.id);
+        if (feeds.length === 0) {
+            console.log(`${user.name} isn't following any feeds`);
+            process.exit(0);
+        }
+        for (let feed of feeds) {
+            const posts = await getPostsForUser(feed.followFeedId, limit);
+            if (posts.length === 0) {
+                console.log(`Somehow, feed ${feed.feedName} has no posts to show.`);
+                console.log("\n");
+                continue;
+            }
+            for (let post of posts) {
+                console.log(`* ${post.title}`);
+                console.log(`Published on ${post.pubDate}`); // TODO: Published dates showing up as undefined. Find out how to fix it
+                console.log(post.description);
+                console.log(`(${post.url})`);
+            }
+            console.log("\n");
+        }
+    } catch (err) {
+        console.error("Something went wrong getting followed posts");
+        console.error(err);
+        process.exit(1);
+    }
+}
+
 export function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler): void {
     registry[cmdName] = handler;
 }
@@ -213,7 +253,12 @@ async function scrapeFeeds(): Promise<void> {
     await markFeedFetched(feed.id);
     const feedContents = await fetchFeed(feed.url);
     for (let item of feedContents.channel.item) {
-        console.log(item.title);
+        try {
+            const post = await createPost(item.title, item.link, item.description, new Date(item.pubDate), feed.id);
+            console.log(`Post has been created: ${post.title}`);
+        } catch (err) {
+            console.log("Post already exists. Skipping...");
+        }
     }
     console.log("\n"); // Give a little bit of space between feeds
 }
