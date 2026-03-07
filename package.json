@@ -1,6 +1,9 @@
 {
   "name": "ts_aggregator",
   "version": "1.0.0",
+  "bin": {
+    "gator": "./dist/index.js"
+  },
   "main": "index.js",
   "type": "module",
   "scripts": {

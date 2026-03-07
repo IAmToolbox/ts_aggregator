@@ -17,6 +17,7 @@ export type CommandsRegistry = Record<string, CommandHandler>;
 
 // These are the handler functions. They handle the commands that gator supports
 
+// Handler for login command: Searches a user in the database and sets that user as active in the config file
 export async function handlerLogin(cmdName: string, ...args: string[]): Promise<void> {
     if (args.length === 0 || args === undefined) {
         throw new Error("Username is required");
@@ -34,6 +35,7 @@ export async function handlerLogin(cmdName: string, ...args: string[]): Promise<
     }
 }
 
+// Handler for register command: Adds a new user to the database
 export async function handlerRegisterUser(cmdName: string, ...args: string[]): Promise<void> {
     if (args.length === 0 || args === undefined) {
         throw new Error("Please provide a username to register");
@@ -49,6 +51,7 @@ export async function handlerRegisterUser(cmdName: string, ...args: string[]): P
     }
 }
 
+// Handler for users command: Prints all the users in the database, highlighting the current user
 export async function handlerGetUsers(cmdName: string): Promise<void> {
     const users = await getUsers();
     if (users.length === 0 || users === undefined) {
@@ -65,6 +68,7 @@ export async function handlerGetUsers(cmdName: string): Promise<void> {
     }
 }
 
+// Handler for reset command: Debug command that deletes all users. Should also delete all other tables due to the cascade constraint
 export async function handlerDeleteAllUsers(cmdName: string): Promise<void> {
     try {
         await deleteAllUsers();
@@ -75,6 +79,7 @@ export async function handlerDeleteAllUsers(cmdName: string): Promise<void> {
     }
 }
 
+// Handler for addfeed command: Adds a feed to the database, relating it to the current user. Makes the current user follow that feed as well
 export async function handlerAddFeed(cmdName: string, user: User, ...args: string[]): Promise<void> {
     if (args.length !== 2 || args === undefined) {
         console.error("Not enough arguments. Please provide a feed name and a url.");
@@ -92,6 +97,7 @@ export async function handlerAddFeed(cmdName: string, user: User, ...args: strin
     }
 }
 
+// Handler for feeds command: Lists all registered feeds alongside the users that registered them
 export async function handlerGetFeeds(cmdName: string): Promise<void> {
     const feeds = await getFeeds();
     if (feeds.length === 0 || feeds === undefined) {
@@ -104,6 +110,7 @@ export async function handlerGetFeeds(cmdName: string): Promise<void> {
     }
 }
 
+// Handler for follow command: Lets the current user follow a feed that was previously registered by another user
 export async function handlerFollow(cmdName: string, user: User, ...args: string[]): Promise<void> {
     if (args.length === 0 || args === undefined) {
         console.error("Please provide a url for the follow");
@@ -121,6 +128,7 @@ export async function handlerFollow(cmdName: string, user: User, ...args: string
     }
 }
 
+// Handler for the following command: Lists all the feeds the current user's following
 export async function handlerGetFollows(cmdName: string, user: User): Promise<void> {
     try {
         const follows = await getFeedFollowsForUser(user.id);
@@ -138,6 +146,7 @@ export async function handlerGetFollows(cmdName: string, user: User): Promise<vo
     }
 }
 
+// Handler for the unfollow command: Lets the current user unfollow a feed, deleting that follow record from the database
 export async function handlerUnfollow(cmdName: string, user: User, ...args: string[]): Promise<void> {
     if (args.length === 0 || args === undefined) {
         console.error("Please provide a url to unfollow");
@@ -154,6 +163,7 @@ export async function handlerUnfollow(cmdName: string, user: User, ...args: stri
     }
 }
 
+// Handler for the agg command: Fetches all posts from all feeds on a timer. Can only be shut down with a Ctrl+C signal
 export async function handlerAggregate(cmdName: string, ...args: string[]): Promise<void> {
     if (args.length === 0 || args === undefined) {
         console.error("Please provide a duration string");
@@ -183,6 +193,7 @@ export async function handlerAggregate(cmdName: string, ...args: string[]): Prom
     }
 }
 
+// Handler for the browse command: Gets the most recent posts from the feeds the current user follows, with a configurable limit amount
 export async function handlerBrowse(cmdName: string, user: User, ...args: string[]): Promise<void> {
     let limit = 2;
     if (args.length !== 0) {
@@ -209,7 +220,7 @@ export async function handlerBrowse(cmdName: string, user: User, ...args: string
             }
             for (let post of posts) {
                 console.log(`* ${post.title}`);
-                console.log(`Published on ${post.pubDate}`); // TODO: Published dates showing up as undefined. Find out how to fix it
+                console.log(`Published on ${post.publishedAt}`);
                 console.log(post.description);
                 console.log(`(${post.url})`);
             }
@@ -222,10 +233,12 @@ export async function handlerBrowse(cmdName: string, user: User, ...args: string
     }
 }
 
+// This function registers a command to the registry on the index file
 export function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler): void {
     registry[cmdName] = handler;
 }
 
+// This function runs a handler command from the index file
 export async function runCommand(registry: CommandsRegistry, cmdName: string, ...args: string[]): Promise<void> {
     if (registry[cmdName]) {
         await registry[cmdName](cmdName, ...args);
@@ -263,6 +276,7 @@ async function scrapeFeeds(): Promise<void> {
     console.log("\n"); // Give a little bit of space between feeds
 }
 
+// This function parses a duration string passed to the agg command handler into a usable type for the interval function
 function parseDuration(durationStr: string): number {
     const regex = /^(\d+)(ms|s|m|h)$/;
     const match = durationStr.match(regex);
@@ -289,6 +303,7 @@ function parseDuration(durationStr: string): number {
     }
 }
 
+// Prints feed information to the console
 function printFeed(feed: Feed, user: User): void {
     console.log(feed);
     console.log(user);

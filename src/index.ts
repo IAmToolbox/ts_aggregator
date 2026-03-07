@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // Blog Aggregator in TypeScript!
 // A Guided Project from Boot.dev
 
